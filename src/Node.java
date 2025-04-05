@@ -16,6 +16,10 @@ public class Node implements Serializable {
         this.username = username;
         this.ip = ip;
         this.port = port;
+        /*
+        isOfflineInfo 和 isOnlineInfo 均初始化为 false，表示初始状态下没有发送上线或下线通知
+        isJustOnline 设为 true，意味着该节点刚刚上线，需要触发事件（更新通讯列表）
+         */
         isOfflineInfo = false;
         isOnlineInfo = false;
         isJustOnline = true;

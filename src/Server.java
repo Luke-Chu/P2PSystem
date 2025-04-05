@@ -11,16 +11,20 @@ import java.util.Vector;
  * 服务器界面
  */
 public class Server extends JFrame {
+    /*
+    使用 serialVersionUID 确保在序列化和反序列化间保持版本兼容性。
+    @Serial 注解提高了代码可读性，表明该字段和序列化相关。
+     */
     @Serial
     private static final long serialVersionUID = 529570721056537567L;
     private StringBuilder systemLog = new StringBuilder();       //系统记录
     private Vector<String> onlinePeople;    //在线用户
-    private JTextArea systemLogTextArea;   //聊天记录组件
-    private JTextArea sendMessageTextArea;  //发送消息组件
-    private JTextField onlineCountTextFile; //在线人数组件
-    private JList<String> onlinePeopleList;         //在线用户组件
-    private JButton sendMessageButton;      //发送消息组件
-    private JButton clearMessageButton;     //清空消息组件
+    private JTextArea systemLogTextArea;   //聊天记录组件，显示系统日志的文本区域
+    private JTextArea sendMessageTextArea;  //发送消息组件，输入发送信息的文本区域
+    private JTextField onlineCountTextFile; //在线人数组件，显示在线人数的文本框
+    private JList<String> onlinePeopleList;         //在线用户组件，显示在线用户列表
+    private JButton sendMessageButton;      //发送消息组件，点击发送信息的按钮
+    private JButton clearMessageButton;     //清空消息组件，清空消息的按钮
     private JButton startServerButton;                //启动服务器组件
     private JButton shutDownServerButton;               //关闭服务器组件
     private boolean isStop;      //是否关闭服务器---线程关闭
@@ -36,17 +40,35 @@ public class Server extends JFrame {
     public Server(String title) throws HeadlessException {
         super(title);
         this.setSize(700,500);        //窗口大小
-        this.setLocationRelativeTo(null);
-        this.setResizable(false);                  //不可变大小
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  //关闭按钮
+        this.setLocationRelativeTo(null);          //居中显示
+        this.setResizable(false);                  //不允许调整窗口大小
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  //设置点击关闭按钮时退出程序
 
         JPanel panel = new JPanel();
-        panel.setLayout(null);
+        panel.setLayout(null);  // 使用绝对布局，故所有组件的位置和尺寸都需要手动设定
         this.init(panel);
         this.getContentPane().add(panel);
-        this.setVisible(true);               //可见
-        this.eventListener();
+        this.setVisible(true);               // 窗口可见
+        this.eventListener();                // 添加事务监听
     }
+
+    /*
+    init(JPanel panel) 方法：
+    该方法用来初始化界面上的各个组件，并设定它们的大小和位置（均通过 setBounds 方法进行绝对定位）：
+    系统日志区域：
+        JLabel label1 显示“系统记录”。
+        systemLogTextArea 用于显示系统的运行日志，并放在一个带边框的滚动窗格 JScrollPane 中，便于查看长日志内容。
+    发送消息区域：
+        sendMessageTextArea 放在滚动窗格中供用户输入消息，
+        sendMessageButton 和 clearMessageButton 分别用于发送消息和清空输入内容。它们在初始化时被禁用（setEnabled(false)），直到服务器启动后才启用。
+    在线用户列表区域：
+        onlinePeopleList 用于显示当前在线的用户，由一个 Vector 数据源提供；
+        onlineCountTextFile 显示当前在线用户数；
+        JLabel onlineLabel 用来标识该部分为“在线用户列表”。
+    控制服务器启动与停止的按钮：
+        startServerButton 与 shutDownServerButton 分别用于启动和关闭服务器。
+        初始状态下，“启动服务器”按钮启用，“关闭服务器”按钮禁用。
+     */
     public void init(JPanel panel){
         JLabel label1 = new JLabel("系统记录");
         label1.setBounds(5,0,492,25);
@@ -69,13 +91,13 @@ public class Server extends JFrame {
         sendMessageButton = new JButton();
         sendMessageButton.setText("发送");
         sendMessageButton.setBounds(5,430,200,30);
-        sendMessageButton.setEnabled(false);
+        sendMessageButton.setEnabled(false);    // 初始化时，处于禁用状态
         panel.add(sendMessageButton);
 
         clearMessageButton = new JButton();
         clearMessageButton.setText("清除");
         clearMessageButton.setBounds(295,430,200,30);
-        clearMessageButton.setEnabled(false);
+        clearMessageButton.setEnabled(false);   // 初始化时，处于禁用状态
         panel.add(clearMessageButton);
 
         JLabel onlineLabel = new JLabel("在线用户列表");
@@ -131,22 +153,27 @@ public class Server extends JFrame {
             @Override
             public void windowClosing(WindowEvent e) {
                 isStop = true;
-                dispose();  //会调用windowClosed(WindowEvent e)方法
+                dispose();  //会调用 windowClosed(WindowEvent e) 方法
             }
         });
         /*
         注：上面服务器的退出事件写得并不好，这个不好我认为不一定是服务器端
         当客户端与服务器端连接时，如果服务器突然退出，客户端会抛出异常，
         这是由于在服务器没有向客户端发送连接断开这类消息来终止连接，此时客户端就被迫断开连接了
-        抛出红色的异常(java.net.SocketException: Connection reset)看着总是有些心烦，建议好好处理下
+        抛出红色的异常 (java.net.SocketException: Connection reset) 看着总是有些心烦，建议好好处理下
          */
     }
     //启动服务器
     public void startServer(){
         try{
+            // 在固定端口 1234 上创建 ServerSocket，以等待客户端连接
             ServerSocket serverSocket = new ServerSocket(1234);      //启动服务器
-            systemLog.append("等待连接......"+"\n");
+            systemLog.append("等待连接......"+"\n");    // 日志追加，提示服务器状态
             setSystemLog(systemLog);
+            /*
+            禁用启动服务器按钮，激活关闭服务器、消息群发和清除信息的按钮
+            只有服务器成功启动之后，才能发送信息、清除信息以及关闭服务器
+             */
             startServerButton.setEnabled(false);
             shutDownServerButton.setEnabled(true);
             sendMessageButton.setEnabled(true);
@@ -165,16 +192,16 @@ public class Server extends JFrame {
     public void updateList(UserInfo userInfo){
         int count = userInfo.getCount();
         onlinePeople.clear();
-        if (count>0){
-            for (int i = 0;i<count;i++){
+        if (count > 0){
+            for (int i = 0; i < count; i ++){
                 Node tempNode = userInfo.searchUserByIndex(i);
                 onlinePeople.add(tempNode.username);
             }
-            onlinePeopleList.setListData(onlinePeople);
+            onlinePeopleList.setListData(onlinePeople); // 更新显示在线用户列表
         }
         //在线人数
         String onlineCount = "在线用户" + count + "人";
         onlineCountTextFile.setText(onlineCount);
-        onlinePeopleList.setListData(onlinePeople);
+//        onlinePeopleList.setListData(onlinePeople); // 此处代码有点冗余，可能是为了确保界面刷新，但通常只需调用一次
     }
 }
