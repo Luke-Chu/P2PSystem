@@ -44,7 +44,7 @@
 
 按钮上有个监听函数（可以理解为一个触发器，当按下时，就触发了这个事件，实际上就是调用了这个函数）。比如服务器的登录:  
 
-```java
+``` java
 //登录
 userLog.addActionListener(e -> {
    try {
@@ -110,13 +110,17 @@ userLog.addActionListener(e -> {
    ![img](image/3.多人同时在线聊天.png)
    <div style="text-align: center;">图4.3 一对多通信</div>
 
-4. 用户可以自由退出，并且服务器和剩下在线用户能够监听到用户下线消息，并且更新列表如图4.4和图4.5所示。
+4. 服务器端可以选中多名用户 `A`、`B`、`C` 进行群发消息，如图4.4所示
+   ![img](image/testForServerBroadcast.png)
+   <div style="text-align: center;">图4.4 服务器群发测试</div>
+
+5. 用户可以自由退出，并且服务器和剩下在线用户能够监听到用户下线消息，并且更新列表如图4.5和图4.6所示。
 
    ![img](image/4.用户可以自由加入和退出系统.png)
-   <div style="text-align: center;">图4.4 自由退出</div>
+   <div style="text-align: center;">图4.5 自由退出</div>
 
    ![img](image/5.具备在线状态监听.png)
-   <div style="text-align: center;">图4.5 实时监听</div>
+   <div style="text-align: center;">图4.6 实时监听</div>
 
 ## 五、实验中遇到的问题、解决方法及体会
 
@@ -124,7 +128,7 @@ userLog.addActionListener(e -> {
 
 在实验的过程中，关于如何将用户在线列表更新并发送给所有用户，我们最终使用了定时器任务。 
 
-```Java
+``` Java
 timer.schedule(new TimerTask() {
     @Override
     public void run() {
@@ -163,7 +167,7 @@ timer.schedule(new TimerTask() {
 
   当新的用户上线后，为了使其他用户怎么得到这个消息，在``Node`节点中设置了三个布尔类型的变量：  
 
-```java
+``` java
 private boolean isOnlineInfo;   //上线通知
 private boolean isOfflineInfo;  //下线通知
 private boolean isJustOnline;  //是否刚上线

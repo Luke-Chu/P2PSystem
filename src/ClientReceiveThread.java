@@ -25,7 +25,7 @@ public class ClientReceiveThread extends Thread{
             while (!client.isStop()){
                 MyStreamSocket myStreamSocket = new MyStreamSocket(serverSocket.accept());
                 String originalMessage = myStreamSocket.receiveMessage();
-                System.out.println("原始接收消息"+originalMessage);
+                System.out.println("Original Received Message: "+originalMessage);
                 String senderName = originalMessage.split("&")[0];
                 String message = originalMessage.split("&")[1];
                 String chatRecord = GetFormatDate.getFormatDate(new Date()) +

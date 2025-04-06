@@ -1,11 +1,18 @@
+import tool.MyException;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.Serial;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Vector;
+import tool.GetFormatDate;
+import java.util.Date;
 
 /**
  * 服务器界面
@@ -30,6 +37,9 @@ public class Server extends JFrame {
     private boolean isStop;      //是否关闭服务器---线程关闭
     public OnlineOfflineMessage onlineMessage;  //上线消息
     public OnlineOfflineMessage offlineMessage; //下线消息
+    private UserInfo userInfo; // 用于消息群发
+    private Node node;         // 服务器节点
+
     public boolean isStop() {
         return isStop;
     }
@@ -132,7 +142,12 @@ public class Server extends JFrame {
     public void eventListener(){
         //发送消息
         sendMessageButton.addActionListener(e -> {
-            //TODO 可自由发挥，服务器给客户端发送消息等
+            //TODO 服务器群发消息给客户端（手动选择服务器端用户列表中的用户进行群发操作）
+            try {
+                sendBroadcastMessage();
+            } catch (MyException | UnknownHostException ex) {
+                setSystemLog(ex.getMessage());
+            }
         });
 
         //清空消息
@@ -163,6 +178,37 @@ public class Server extends JFrame {
         抛出红色的异常 (java.net.SocketException: Connection reset) 看着总是有些心烦，建议好好处理下
          */
     }
+    // 追加显示聊天区信息
+    public void setSystemLog(String ExceptionRecord) {
+        this.systemLog.append(ExceptionRecord).append("\n");
+        setSystemLog(systemLog);
+    }
+    public void sendBroadcastMessage() throws MyException, UnknownHostException {
+        // 获取待发送的消息
+        String sendMsg = sendMessageTextArea.getText();
+        System.out.println("Input Broadcast Message from Server: "+sendMsg);
+        if (sendMsg.isEmpty())
+            throw new MyException("消息不能为空!");
+
+        // 获取待发送消息的所有目标用户
+        List<String> AllUserName = onlinePeopleList.getSelectedValuesList();
+        // 初始化服务器端节点信息对象
+        ServerSendThread serverSendThread = new ServerSendThread(AllUserName,userInfo, node.username,sendMsg);
+        serverSendThread.start();   // 启动发送进程
+
+        // 更新发送方的聊天记录
+        StringBuilder select = new StringBuilder();
+        for (String strName:AllUserName)
+            select.append(strName).append("/");
+        systemLog.append(GetFormatDate.getFormatDate(new Date()));
+        systemLog.append(node.username).append("(broadcast) to < ");
+        for (String strName:AllUserName)
+            systemLog.append(strName).append(" ");
+        systemLog.append("> --->");
+        systemLog.append(sendMsg).append("\n");
+        setSystemLog(systemLog);
+        sendMessageTextArea.setText(null);  // 清空消息输入区，方便下一次输入
+    }
     //启动服务器
     public void startServer(){
         try{
@@ -170,6 +216,10 @@ public class Server extends JFrame {
             ServerSocket serverSocket = new ServerSocket(1234);      //启动服务器
             systemLog.append("等待连接......"+"\n");    // 日志追加，提示服务器状态
             setSystemLog(systemLog);
+            String localhost = InetAddress.getLocalHost().getHostAddress();
+            InetAddress inetAddress = InetAddress.getLocalHost();   // 获取本机 IP 地址
+            System.out.println(inetAddress);
+            node = new Node("server",InetAddress.getByName(localhost),1234);  // 构造节点
             /*
             禁用启动服务器按钮，激活关闭服务器、消息群发和清除信息的按钮
             只有服务器成功启动之后，才能发送信息、清除信息以及关闭服务器
@@ -180,7 +230,7 @@ public class Server extends JFrame {
             clearMessageButton.setEnabled(true);
             this.isStop = false;
             //在线用户列表
-            UserInfo userInfo = new UserInfo();
+            userInfo = new UserInfo();
             //创建服务器端监听线程，监听客户端的连接请求
             ServerListenThread serverListenThread = new ServerListenThread(userInfo, serverSocket,systemLog,this);
             serverListenThread.setName("--服务器监听线程--");

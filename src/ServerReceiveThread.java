@@ -157,7 +157,7 @@ public class ServerReceiveThread extends Thread {
                     }
 
                     server.setSystemLog(systemLog);
-                    System.out.println("下线通知："+node.username);
+                    System.out.println("Offline Notification From Server: "+node.username);
                     //准备发送给所以在线客户
                     server.offlineMessage = new OnlineOfflineMessage(node);
                     userInfo.setOfflineStatus(true);

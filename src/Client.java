@@ -20,12 +20,12 @@ import java.util.Vector;
 public class Client extends JFrame{
     @Serial
     private static final long serialVersionUID = 7440762172509840123L;
-    private final StringBuilder chatRecord;       //聊天记录
-    private Vector<String> onlinePeople;    //在线用户
-    private String userName = "";                //用户名
-    private JTextArea chatRecordTextArea;   //聊天记录组件
-    private JTextArea sendMessageTextArea;  //发送消息组件
-    private JTextField onlineCountTextFile; //在线人数组件
+    private final StringBuilder chatRecord;       //聊天记录，用于保存和累计聊天记录文本，便于实时更新和显示聊天内容
+    private Vector<String> onlinePeople;    //在线用户，用于存放在线用户的用户名列表，并通过 JList 进行展示
+    private String userName = "";                //用户名，保存当前客户端用户的用户名，后续登录时会获取该输入框中的内容
+    private JTextArea chatRecordTextArea;   //聊天记录组件，显示聊天记录的多行文本区域，设置为不可编辑
+    private JTextArea sendMessageTextArea;  //发送消息组件，用于输入待发送消息的区域
+    private JTextField onlineCountTextFile; //在线人数组件，用于展示在线用户列表
     private JList<String> onlinePeopleList;         //在线用户组件
     private JTextField userNameTextFile;    //用户名组件
     private JButton sendMessageButton;      //发送消息组件
@@ -40,7 +40,7 @@ public class Client extends JFrame{
     public Client(String title) throws HeadlessException {
         super(title);
         this.setSize(700,500);        //窗口大小
-        this.setLocationRelativeTo(null);
+        this.setLocationRelativeTo(null);         // 绝对布局
         this.setResizable(false);                  //不可变大小
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  //关闭按钮
 
@@ -172,7 +172,7 @@ public class Client extends JFrame{
             public void windowClosing(WindowEvent e) {
                 try {
                     comWithServer.sendEndMessage();
-                    dispose();  //会调用windowClosed(WindowEvent e)方法
+                    dispose();  //会调用 windowClosed(WindowEvent e) 方法
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -180,15 +180,17 @@ public class Client extends JFrame{
         });
 
     }
+    // 追加显示聊天区信息
     public void setChatRecord(String chatRecord) {
         this.chatRecord.append(chatRecord).append("\n");
         chatRecordTextArea.setText(String.valueOf(this.chatRecord));
     }
+    // 聊天区信息整块设置
     public void setChatRecord(StringBuilder chatRecord) {
         chatRecordTextArea.setText(String.valueOf(chatRecord));
     }
     public String getUserName() {
-        userName = userNameTextFile.getText().trim();
+        userName = userNameTextFile.getText().trim();   // 获取用户名，去除两端空格后返回
         return userName;
     }
     public boolean isStop() {
@@ -196,35 +198,42 @@ public class Client extends JFrame{
     }
     public void login() throws IOException {
         String localhost = InetAddress.getLocalHost().getHostAddress();
-        InetAddress inetAddress = InetAddress.getLocalHost();
+        InetAddress inetAddress = InetAddress.getLocalHost();   // 获取本机 IP 地址
         System.out.println(inetAddress);
         SocketAddress socketAddress = new InetSocketAddress(inetAddress, 1234);
-        int myReceivePort = RandomPort.getAvailableRandomPort();
+        int myReceivePort = RandomPort.getAvailableRandomPort();    // 获取一个可用的端口号，作为客户端接收消息的端口
         System.out.println("receivePort--->"+myReceivePort);
 
-        node = new Node(getUserName(),InetAddress.getByName(localhost),myReceivePort);
+        node = new Node(getUserName(),InetAddress.getByName(localhost),myReceivePort);  // 构造节点
         comWithServer = new ComWithServer(node,userInfo,socketAddress,this);
-        comWithServer.start();
+        comWithServer.start();  // 启动通信线程
 
+        // 界面状态调整：登登录后，启用发送、清空消息、退出客户端按钮，同时禁用登录按钮和用户名输入框，防止用户重复登录
         sendMessageButton.setEnabled(true);
         clearMessageButton.setEnabled(true);
         userExit.setEnabled(true);
         userLog.setEnabled(false);
         userNameTextFile.setEditable(false);
-        //
+
+        // 启动接收线程，在该 P2P 模式中，客户端同时也为服务器端，用于异步接收外来信息
         ClientReceiveThread clientReceiveThread = new ClientReceiveThread(node,this);
         clientReceiveThread.setName("--"+node.username+"的接收线程--");
-        clientReceiveThread.setDaemon(true);
-        clientReceiveThread.start();
+        clientReceiveThread.setDaemon(true);    // 设为保护线程，确保在主进程退出时也能自动结束
+        clientReceiveThread.start();    // 启动接收线程
     }
     public void sendMessage() throws MyException {
+        // 获取待发送的消息
         String sendMsg = sendMessageTextArea.getText();
-        System.out.println("输入内容："+sendMsg);
+        System.out.println("Input Message From Client: "+sendMsg);
         if (sendMsg.isEmpty())
             throw new MyException("消息不能为空!");
+
+        // 获取待发送消息的目标用户
         List<String> selectName = onlinePeopleList.getSelectedValuesList();
         ClientSendThread clientSendThread = new ClientSendThread(selectName,userInfo, node.username,sendMsg);
-        clientSendThread.start();
+        clientSendThread.start();   // 启动发送进程
+
+        // 更新发送方的聊天记录
         StringBuilder select = new StringBuilder();
         for (String strName:selectName)
             select.append(strName).append("、");
@@ -232,13 +241,13 @@ public class Client extends JFrame{
         chatRecord.append(node.username).append("--->").append(select.deleteCharAt(select.length()-1)).append("\n");
         chatRecord.append(sendMsg).append("\n");
         setChatRecord(chatRecord);
-        sendMessageTextArea.setText(null);
+        sendMessageTextArea.setText(null);  // 清空消息输入区，方便下一次输入
     }
     public void updateList(UserInfo userInfo){
         int count = userInfo.getCount();
         onlinePeople.clear();
-        if (count>0){
-            for (int i = 0;i<count;i++){
+        if (count > 0){
+            for (int i = 0; i < count; i ++){
                 Node tempNode = userInfo.searchUserByIndex(i);
                 onlinePeople.add(tempNode.username);
             }
