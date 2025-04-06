@@ -46,6 +46,7 @@ public class UserInfo {
             node.setOfflineInfo(b);
     }
 
+    // 将所有用户节点信息通过调用各自的 toString() 方法拼接成一个字符串，每个节点之间以 $ 分隔。
     @Override
     public String toString() {
         StringBuilder userInfo = new StringBuilder();
