@@ -1,6 +1,26 @@
-**/target/
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.txt
+coverage.html
+.cover
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+dist/
+.envrc
+.env
 .idea
-*.iml
-*.class
-*Test.java
-**/test/
+.vscode
+.DS_Store
